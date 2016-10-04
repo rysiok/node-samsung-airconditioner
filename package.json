@@ -1,5 +1,5 @@
 {
-  "name": "samsung-airconditioner",
+  "name": "node-samsung-airconditioner",
   "version": "0.2.3",
   "description": "node.js module for the Samsung smart samsung-airconditioners",
   "author": {
@@ -8,10 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/CloCkWeRX/node-samsung-airconditioner.git"
+    "url": "https://github.com/zyrorl/node-samsung-airconditioner.git"
   },
   "bugs": {
-    "url": "https://github.com/CloCkWeRX/node-samsung-airconditioner/issues"
+    "url": "https://github.com/zyrorl/node-samsung-airconditioner/issues"
   },
   "keywords": [
     "Samsung",
