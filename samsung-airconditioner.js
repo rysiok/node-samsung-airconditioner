@@ -41,7 +41,7 @@ console.log("connect");
 
 
 
-  self.socket = tls.connect({pfx: fs.readFileSync('./node_modules/samsung-airconditioner/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
+  self.socket = tls.connect({pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
     self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
 
     self.socket.setEncoding('utf8');
@@ -148,7 +148,7 @@ SamsungAirconditioner.prototype.get_token = function(callback) {
 
 
 	console.log("coonnecting to: " + self.options.ip);
-  socket = tls.connect({pfx: fs.readFileSync('./node_modules/samsung-airconditioner/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
+  socket = tls.connect({pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
     var n = 0, state;
 
     self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
