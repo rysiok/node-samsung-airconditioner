@@ -1,6 +1,6 @@
 {
   "name": "node-samsung-airconditioner",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "node.js module for the Samsung smart samsung-airconditioners",
   "author": {
     "name": "Daniel O'Connor",
