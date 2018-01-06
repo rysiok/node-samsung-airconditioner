@@ -41,7 +41,15 @@ console.log("connect");
 
 
 
-  self.socket = tls.connect({pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
+  self.socket = tls.connect({
+    pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'),
+    port: 2878,
+    host: self.options.ip,
+    rejectUnauthorized: false,
+    // https://github.com/CloCkWeRX/node-samsung-airconditioner/issues/7
+    // Error: 140735892054848:error:14082174:SSL routines:ssl3_check_cert_and_algorithm:dh key too small:../deps/openssl/openssl/ssl/s3_clnt.c:3641:
+    secureContext: tls.createSecureContext({  ciphers: 'HIGH:!DH:!aNULL' })
+  }, function() {  
     self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
 
     self.socket.setEncoding('utf8');
@@ -147,13 +155,19 @@ SamsungAirconditioner.prototype.get_token = function(callback) {
   if (typeof callback !== 'function') throw new Error('callback is mandatory for get_token');
 
 
-	console.log("coonnecting to: " + self.options.ip);
-  socket = tls.connect({pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'), port: 2878, host: self.options.ip, rejectUnauthorized: false }, function() {  
+	console.log("connecting to: " + self.options.ip);
+  socket = tls.connect({ 
+    pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'),
+    port: 2878,
+    host: self.options.ip,
+    rejectUnauthorized: false,
+    secureContext: tls.createSecureContext({  ciphers: 'HIGH:!DH:!aNULL' })
+  }, function() {  
     var n = 0, state;
 
     self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
 
-    socket.setEncoding('utf8');
+    socket.setEncoding('utf-8');
     carrier.carry(socket, function(line) {
       self.logger.debug('read', line);
       if (line == 'DRC-1.00') {
