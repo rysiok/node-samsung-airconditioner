@@ -1,34 +1,26 @@
 {
   "name": "node-samsung-airconditioner",
-  "version": "0.2.5",
+  "version": "0.2.6",
+  "main": "test.ts",
   "description": "node.js module for the Samsung smart samsung-airconditioners",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rysiok/node-samsung-airconditioner.git"
+  },
   "author": {
     "name": "Daniel O'Connor",
     "email": "daniel.oconnor@gmail.com"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zyrorl/node-samsung-airconditioner.git"
-  },
-  "bugs": {
-    "url": "https://github.com/zyrorl/node-samsung-airconditioner/issues"
-  },
+  "readmeFilename": "README.md",
   "keywords": [
     "Samsung",
     "Air Conditioner"
   ],
-  "main": "./samsung-discovery.js",
-  "engines": {
-    "node": ">=0.8"
-  },
-  "readmeFilename": "README.md",
   "dependencies": {
-    "carrier": ">= 0.1.0",
-    "netmask": "1.0.4",
-    "node-ssdp": "^2.7.0",
-    "xml2json": "^0.9.0"
+    "carrier": "^0.3.0",
+    "xml2js": "^0.4.19"
   },
   "devDependencies": {
-    "jshint": "0.9.1"
+    "@types/node": "8"
   }
 }
