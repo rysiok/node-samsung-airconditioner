@@ -1,345 +1,133 @@
-var events  = require('events'), 
-    util    = require('util'), 
-    tls     = require('tls'), 
-    carrier = require('carrier');
-const fs = require('fs');
-
-var DEFAULT_LOGGER = { 
-  error   : function(msg, props) { console.log(msg); if (!!props) console.trace(props.exception); },
-  warning : function(msg, props) { console.log(msg); if (!!props) console.log(props);             }, 
-  notice  : function(msg, props) { console.log(msg); if (!!props) console.log(props);             }, 
-  info    : function(msg, props) { console.log(msg); if (!!props) console.log(props);             },
-  debug   : function(msg, props) { console.log(msg); if (!!props) console.log(props);             }                     
+"use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+process.env.NODE_DEBUG = 'tls';
+var events_1 = require("events");
+var tls = require("tls");
+var carrier_1 = require("carrier");
+var DEFAULT_LOGGER = {
+    error: function (msg, props) {
+        console.log(msg);
+        if (!!props)
+            console.trace(props.exception);
+    },
+    warning: function (msg, props) {
+        console.log(msg);
+        if (!!props)
+            console.log(props);
+    },
+    notice: function (msg, props) {
+        console.log(msg);
+        if (!!props)
+            console.log(props);
+    },
+    info: function (msg, props) {
+        console.log(msg);
+        if (!!props)
+            console.log(props);
+    },
+    debug: function (msg, props) {
+        console.log(msg);
+        if (!!props)
+            console.log(props);
+    }
 };
-NODE_DEBUG=tls;
-
-var SamsungAirconditioner = function(options) {
-  var k;
-
-  var self = this;
-  self.state = {};
-
-  if (!(self instanceof SamsungAirconditioner)) return new SamsungAirconditioner(options);
-
-  self.options = options;
-
-  self.logger = self.options.logger  || {};
-  for (k in DEFAULT_LOGGER) {
-    if ((DEFAULT_LOGGER.hasOwnProperty(k)) && (typeof self.logger[k] === 'undefined'))  self.logger[k] = DEFAULT_LOGGER[k];
-  }
-
-  self.props = { duid : options.duid };
-};
-util.inherits(SamsungAirconditioner, events.EventEmitter);
-
-
-
-SamsungAirconditioner.prototype._connect = function() {
-  var self = this;
-console.log("connect");
-  self.callbacks = {};
-
-
-
-  self.socket = tls.connect({
-    pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'),
-    port: 2878,
-    host: self.options.ip,
-    rejectUnauthorized: false,
-    // https://github.com/CloCkWeRX/node-samsung-airconditioner/issues/7
-    // Error: 140735892054848:error:14082174:SSL routines:ssl3_check_cert_and_algorithm:dh key too small:../deps/openssl/openssl/ssl/s3_clnt.c:3641:
-    secureContext: tls.createSecureContext({  ciphers: 'HIGH:!DH:!aNULL' })
-  }, function() {  
-    self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
-
-    self.socket.setEncoding('utf8');
-    carrier.carry(self.socket, function(line) {
-      var callback, id, state;
-
-      if (line === 'DRC-1.00') {
-        return;
-      }
-
-      if (line === '<?xml version="1.0" encoding="utf-8" ?><Update Type="InvalidateAccount"/>') {
-        return self._send('<Request Type="AuthToken"><User Token="' + self.token + '" /></Request>');
-      }
-
-      if (line.match(/Response Type="AuthToken" Status="Okay"/)) {
-         self.emit('loginSuccess');
-      }
-
-      self.logger.debug('read', { line: line });
-
-      // Other events
-      if (line.match(/Update Type="Status"/)) {
-        if ((matches = line.match(/Attr ID="(.*)" Value="(.*)"/))) {
-          state = {};
-          state[matches[1]] = matches[2];
-
-          self.emit('stateChange', state);
-        }
-      }
-
-      if (line.match(/Response Type="DeviceState" Status="Okay"/)) {
-          state = {};
-
-          // line = '<Device DUID="7825AD103D06" GroupID="AC" ModelID="AC" ><Attr ID="AC_FUN_ENABLE" Type="RW" Value="Enable"/><Attr ID="AC_FUN_POWER" Type="RW" Value="Off"/><Attr ID="AC_FUN_SUPPORTED" Type="R" Value="0"/><Attr ID="AC_FUN_OPMODE" Type="RW" Value="NotSupported"/><Attr ID="AC_FUN_TEMPSET" Type="RW" Value="24"/><Attr ID="AC_FUN_COMODE" Type="RW" Value="Off"/><Attr ID="AC_FUN_ERROR" Type="RW" Value="00000000"/><Attr ID="AC_FUN_TEMPNOW" Type="R" Value="29"/><Attr ID="AC_FUN_SLEEP" Type="RW" Value="0"/><Attr ID="AC_FUN_WINDLEVEL" Type="RW" Value="High"/><Attr ID="AC_FUN_DIRECTION" Type="RW" Value="Fixed"/><Attr ID="AC_ADD_AUTOCLEAN" Type="RW" Value="Off"/><Attr ID="AC_ADD_APMODE_END" Type="W" Value="0"/><Attr ID="AC_ADD_STARTWPS" Type="RW" Value="Direct"/><Attr ID="AC_ADD_SPI" Type="RW" Value="Off"/><Attr ID="AC_SG_WIFI" Type="W" Value="Connected"/><Attr ID="AC_SG_INTERNET" Type="W" Value="Connected"/><Attr ID="AC_ADD2_VERSION" Type="RW" Value="0"/><Attr ID="AC_SG_MACHIGH" Type="W" Value="0"/><Attr ID="AC_SG_MACMID" Type="W" Value="0"/><Attr ID="AC_SG_MACLOW" Type="W" Value="0"/><Attr ID="AC_SG_VENDER01" Type="W" Value="0"/><Attr ID="AC_SG_VENDER02" Type="W" Value="0"/><Attr ID="AC_SG_VENDER03" Type="W" Value="0"/></Device>'
-
-          var attributes = line.split("><");
-          attributes.forEach(function(attr) {
-            if ((matches = attr.match(/Attr ID="(.*)" Type=".*" Value="(.*)"/))) {
-              state[matches[1]] = matches[2];
-            }
-          });
-
-          self.emit('stateChange', state);
-      }
-
-/* extract CommandID into and then... */
-      if (!self.callbacks[id]) return;
-      callback = self.callbacks[id];
-      delete(self.callbacks[id]);
-
-/* you may want to pass a structure instead, cf., xml2json */
-      callback(null, line);
+var SslClient = /** @class */ (function () {
+    function SslClient(ip, logger, port) {
+        this._port = 2878;
+        this._socket = null;
+        this._ip = ip;
+        this._port = port;
+        this._logger = logger;
+    }
+    SslClient.prototype.connect = function () {
+        var _this = this;
+        this._socket = tls.connect({
+            port: this._port,
+            host: this._ip,
+            rejectUnauthorized: false,
+            secureContext: tls.createSecureContext({ ciphers: 'HIGH:!DH:!aNULL' })
+        }, function () {
+            _this._logger.info('connected to samsung AC', { ipAddr: _this._ip, port: _this._port, tls: true });
+        });
+        this._socket.setEncoding('utf-8');
+        return this._socket;
+    };
+    SslClient.prototype.disconnect = function () {
+        this._socket.end();
+    };
+    SslClient.prototype.readLines = function (callback) {
+        return carrier_1.carry(this._socket, callback);
+    };
+    SslClient.prototype.writeLine = function (data) {
+        if (!this._socket)
+            throw new Error('not connected');
+        this._logger.debug('write line', { line: data });
+        this._socket.write(data + "\r\n");
+    };
+    return SslClient;
+}());
+var SamsungAuthenticator = /** @class */ (function (_super) {
+    __extends(SamsungAuthenticator, _super);
+    function SamsungAuthenticator(options) {
+        var _this = _super.call(this) || this;
+        _this._logger = DEFAULT_LOGGER;
+        _this._options = options;
+        _this._sslClient = new SslClient(options.ip, _this._logger, options.port);
+        return _this;
+    }
+    Object.defineProperty(SamsungAuthenticator.prototype, "options", {
+        get: function () {
+            return this._options;
+        },
+        enumerable: true,
+        configurable: true
     });
-  }).on('end', function() {
-    self.emit('end');
-  }).on('error', function(err) {
-    self.emit('error', err);
-  });
-};
-
-SamsungAirconditioner.prototype._device_control = function(key, value, callback) {
-  var id;
-
-  var self = this;
-
-  if (!self.socket) throw new Error('not logged in');
-
-  id = Math.round(Math.random() * 10000);
-  if (!!callback) self.callbacks[id] = callback;
-
-  return self._send(
-    '<Request Type="DeviceControl"><Control CommandID="cmd' + id + '" DUID="' + self.options.duid + '"><Attr ID="' + key + '" Value="' + value + '" /></Control></Request>'
-  );
-};
-
-SamsungAirconditioner.prototype._send = function(xml) {
-  var self = this;
-
-  self.logger.debug('write', { line: xml });
-  self.socket.write(xml + "\r\n");
-
-  return self;
-};
-
-
-// Public API
-
-SamsungAirconditioner.prototype.login = function(token, callback) {
-  var self = this;
-
-  self.token = token;
-  self._connect();
-
-  setTimeout(function() { callback(null, null); }, 0);
-  return self;
-};
-
-SamsungAirconditioner.prototype.get_token = function(callback) {
-  var socket;
-
-  var self = this;
-
-  if (typeof callback !== 'function') throw new Error('callback is mandatory for get_token');
-
-
-	console.log("connecting to: " + self.options.ip);
-  socket = tls.connect({ 
-    pfx: fs.readFileSync(__dirname + '/ac14k_m.pfx'),
-    port: 2878,
-    host: self.options.ip,
-    rejectUnauthorized: false,
-    secureContext: tls.createSecureContext({  ciphers: 'HIGH:!DH:!aNULL' })
-  }, function() {  
-    var n = 0, state;
-
-    self.logger.info('connected', { ipaddr: self.options.ip, port: 2878, tls: true });
-
-    socket.setEncoding('utf-8');
-    carrier.carry(socket, function(line) {
-      self.logger.debug('read', line);
-      if (line == 'DRC-1.00') {
-        return;
-      }
-
-      if (line == '<?xml version="1.0" encoding="utf-8" ?><Update Type="InvalidateAccount"/>') {
-        return socket.write('<Request Type="GetToken" />' + "\r\n");
-      }
-
-      if (line == '<?xml version="1.0" encoding="utf-8" ?><Response Type="GetToken" Status="Ready"/>') {
-        return self.emit('waiting');
-      }
-
-      /* examine the line that contains the result */
-      if (line == '<?xml version="1.0" encoding="utf-8" ?><Response Status="Fail" Type="Authenticate" ErrorCode="301" />') {
-         return callback(new Error('Failed authentication'));
-      }
-
-
-      var matches = line.match(/Token="(.*)"/);
-      if (matches) {
-         self.emit('authenticated');
-        self.token =  matches[1];
-        return callback(null, self.token);
-      }
-
-
-      // Other events
-      if (line.match(/Update Type="Status"/)) {
-        if ((matches = line.match(/Attr ID="(.*)" Value="(.*)"/))) {
-          
-          self.state[matches[1]] = matches[2];
-
-          self.emit('stateChange', state);
-        }
-      }
-
-      if (line.match(/Response Type="DeviceState" Status="Okay"/)) {
-          state = {};
-
-          // line = '<Device DUID="7825AD103D06" GroupID="AC" ModelID="AC" ><Attr ID="AC_FUN_ENABLE" Type="RW" Value="Enable"/><Attr ID="AC_FUN_POWER" Type="RW" Value="Off"/><Attr ID="AC_FUN_SUPPORTED" Type="R" Value="0"/><Attr ID="AC_FUN_OPMODE" Type="RW" Value="NotSupported"/><Attr ID="AC_FUN_TEMPSET" Type="RW" Value="24"/><Attr ID="AC_FUN_COMODE" Type="RW" Value="Off"/><Attr ID="AC_FUN_ERROR" Type="RW" Value="00000000"/><Attr ID="AC_FUN_TEMPNOW" Type="R" Value="29"/><Attr ID="AC_FUN_SLEEP" Type="RW" Value="0"/><Attr ID="AC_FUN_WINDLEVEL" Type="RW" Value="High"/><Attr ID="AC_FUN_DIRECTION" Type="RW" Value="Fixed"/><Attr ID="AC_ADD_AUTOCLEAN" Type="RW" Value="Off"/><Attr ID="AC_ADD_APMODE_END" Type="W" Value="0"/><Attr ID="AC_ADD_STARTWPS" Type="RW" Value="Direct"/><Attr ID="AC_ADD_SPI" Type="RW" Value="Off"/><Attr ID="AC_SG_WIFI" Type="W" Value="Connected"/><Attr ID="AC_SG_INTERNET" Type="W" Value="Connected"/><Attr ID="AC_ADD2_VERSION" Type="RW" Value="0"/><Attr ID="AC_SG_MACHIGH" Type="W" Value="0"/><Attr ID="AC_SG_MACMID" Type="W" Value="0"/><Attr ID="AC_SG_MACLOW" Type="W" Value="0"/><Attr ID="AC_SG_VENDER01" Type="W" Value="0"/><Attr ID="AC_SG_VENDER02" Type="W" Value="0"/><Attr ID="AC_SG_VENDER03" Type="W" Value="0"/></Device>'
-
-          var attributes = line.split("><");
-          attributes.forEach(function(attr) {
-            if ((matches = attr.match(/Attr ID="(.*)" Type=".*" Value="(.*)"/))) {
-              state[matches[1]] = matches[2];
+    SamsungAuthenticator.prototype.getToken = function () {
+        var _this = this;
+        this._sslClient.connect();
+        this._sslClient.readLines(function (line) {
+            _this._logger.debug('read', line);
+            switch (line) {
+                case "DRC-1.00":
+                    break;
+                case '<?xml version="1.0" encoding="utf-8" ?><Update Type="InvalidateAccount"/>':
+                    _this._sslClient.writeLine('<Request Type="GetToken" />');
+                    break;
+                case '<?xml version="1.0" encoding="utf-8" ?><Response Type="GetToken" Status="Ready"/>':
+                    _this.emit('waiting');
+                    break;
+                default:
+                    var matches = line.match(/Token="(.*)"/);
+                    if (matches) {
+                        _this._options.id = matches[1];
+                        _this.emit('authenticated', _this._options.id);
+                    }
+                    else if (line == '<?xml version="1.0" encoding="utf-8" ?><Response Status="Fail" Type="Authenticate" ErrorCode="301" />') {
+                        _this.emit('error', 'Failed authentication. Too slow !!!');
+                    }
+                    _this._sslClient.disconnect();
             }
-          });
-
-          self.emit('stateChange', state);
-      }
-
-
-    });
-  }).on('end', function() {
-    if (!self.token) callback(new Error('premature disconnection'));
-  }).on('error', function(err) {
-  	console.log(err);
-    if (!self.token) callback(err);
-  });
-
-  return self;
-};
-
-// can't use ".on" (it's used by emitters)
-SamsungAirconditioner.prototype.onoff = function(onoff) {
-  return this._device_control('AC_FUN_POWER', onoff ? 'On' : 'Off');
-};
-
-SamsungAirconditioner.prototype.off = function() {
-  return this._device_control('AC_FUN_POWER', 'Off');
-};
-
-SamsungAirconditioner.prototype.mode = function(type) {
-  var i, lmodes = [];
-
-  var modes = ['Auto', 'Cool', 'Dry', 'Wind', 'Heat'], 
-      self  = this;
-
-  for (i = 0; i < modes.length; i++) lmodes[i] = modes[i].toLowerCase();
-  i = lmodes.indexOf(type.toLowerCase());
-  if (i === -1) throw new Error("Invalid mode: " + type);
-
-  return self._device_control('AC_FUN_OPMODE', modes[i]);
-};
-
-SamsungAirconditioner.prototype.set_temperature = function(temp) {
-  return this._device_control('AC_FUN_TEMPSET', temp);
-};  
-
-SamsungAirconditioner.prototype.set_convenient_mode = function(mode) {
-  var i, lmodes = [];
-
-  var modes = ['Off', 'Quiet', 'Sleep', 'Smart', 'SoftCool', 'TurboMode', 'WindMode1', 'WindMode2', 'WindMode3'], 
-      self  = this;
-
-  for (i = 0; i < modes.length; i++) lmodes[i] = modes[i].toLowerCase();
-  i = lmodes.indexOf(mode.toLowerCase());
-  if (i === -1) throw new Error("Invalid mode: " + mode);
-
-  return self._device_control('AC_FUN_COMODE', mode);
-};
-  
-
-SamsungAirconditioner.prototype.sleep_mode = function(minutes) {
-  return this._device_control('AC_FUN_SLEEP', minutes);
-};
-
-SamsungAirconditioner.prototype.send_command = function(cmd,value) {
-  return this._device_control(cmd, value);
-};
-
-SamsungAirconditioner.prototype.status = function() {
-  var self = this;
-  return self._send('<Request Type="DeviceState" DUID="' + self.options.duid+ '"></Request>');
-};
-
-
-/*
-
-
-//   def wind_level(mode)
-//     mode = type.capitalize
-//     modes = ['Auto', 'Low', 'Mid', 'High', 'Turbo']
-//     if modes.index(mode) == nil
-//       throw "Invalid operation mode, " + mode + " is not one of " + modes.inspect
-//     end    
-
-//     device_control('AC_FUN_WINDLEVEL', hours)
-//   end
-
-//   def wind_level(mode)
-//     mode = type.capitalize
-//     modes = [
-//       'Center', 
-//       'Direct', 
-//       'Fixed', 
-//       'Indirect', 
-//       'Left', 
-//       'Long', 
-//       'Off', 
-//       'Right', 
-//       'Rotation', 
-//       'SwingLR', 
-//       'SwingUD', 
-//       'Wide'
-//     ]
-
-//     if modes.index(mode) == nil
-//       throw "Invalid operation mode, " + mode + " is not one of " + modes.inspect
-//     end    
-
-//     device_control('AC_FUN_DIRECTION', mode)
-//   end
-
-//    def autoclean(mode)
-//     mode = type.capitalize
-//     modes = [
-//       'On',
-//       'Off'
-//     ]
-
-//     if modes.index(mode) == nil
-//       throw "Invalid operation mode, " + mode + " is not one of " + modes.inspect
-//     end    
-
-//     device_control('AC_ADD_AUTOCLEAN', mode)
-//   end
-// end
-
-
-  */
-
-module.exports = SamsungAirconditioner;
+        }).on('end', function () {
+            _this._logger.debug('TLS Socket end');
+            _this.emit('end');
+        }).on('error', function (err) {
+            _this._logger.error('TLS Socket error', err);
+            _this.emit('error', err);
+        });
+    };
+    return SamsungAuthenticator;
+}(events_1.EventEmitter));
+exports.SamsungAuthenticator = SamsungAuthenticator;
